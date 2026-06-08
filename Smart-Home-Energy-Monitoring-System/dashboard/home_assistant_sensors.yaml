@@ -1,0 +1,50 @@
+# Place this standard block within the Home Assistant 'configuration.yaml'
+# file to convert Raw MQTT JSON strings into native, entity sensor classes.
+
+mqtt:
+  sensor:
+    - name: "Grid True Power"
+      unique_id: "energy_grid_active_power"
+      state_topic: "home/energy/main_node"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      value_template: "{{ value_json.power | float }}"
+      
+    - name: "Grid Safe RMS Current"
+      unique_id: "energy_grid_rms_amps"
+      state_topic: "home/energy/main_node"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      value_template: "{{ value_json.current | float }}"
+      
+    - name: "Grid System Voltage"
+      unique_id: "energy_grid_rms_volts"
+      state_topic: "home/energy/main_node"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      value_template: "{{ value_json.voltage | float }}"
+      
+    - name: "Grid Cumulative Total consumption"
+      unique_id: "energy_grid_total_energy"
+      state_topic: "home/energy/main_node"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      value_template: "{{ value_json.energy_kwh | float }}"
+
+# Home Assistant Automation to trip alarm dashboard and send mobile notifications
+automation:
+  - alias: "Smart Breaker Critical Exceeded Cutoff"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.grid_true_power
+        above: 3000
+        for: "00:00:03" # Hold trigger solid for 3 seconds
+    action:
+      - service: notify.persistent_notification
+        data:
+          title: "ELECTRICAL BREAKER OVERLOAD"
+          message: "Breaker tripped dynamically! Circuit loads exceeded security limits."

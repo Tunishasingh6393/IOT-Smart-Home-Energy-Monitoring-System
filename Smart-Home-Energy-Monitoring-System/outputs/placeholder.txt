@@ -1,0 +1,2 @@
+# Smart Home Energy Monitoring System - Outputs Directory
+This folder is used to hold exported analytical figures, simulated graphs, or compiled academic audit reports generated during runtime.

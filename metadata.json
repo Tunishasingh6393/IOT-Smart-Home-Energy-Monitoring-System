@@ -1,0 +1,6 @@
+{
+  "name": "Smart Home Energy Monitoring System",
+  "description": "Learn and interact with an IoT Energy Monitoring System, complete with interactive hardware circuit guides, real-time virtual simulation dashboard, firmware generators, calibration tests, and structured GitHub upload templates.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

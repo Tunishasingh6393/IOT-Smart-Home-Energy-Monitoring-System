@@ -1,0 +1,74 @@
+========================================================================
+SCT-013 ANALOG FRONT-END (AFE) BIASING CIRCUIT SPECIFICATION
+========================================================================
+This document diagrams and reviews the electronic conditioning circuitry 
+required to interface an SCT-013 alternating current (AC) sensor clamp 
+with single-ended analog-to-digital converter (ADC) microcontroller nodes.
+
+------------------------------------------------------------------------
+1. THE CORE PROBLEM DEFINITION
+------------------------------------------------------------------------
+- AC current lines generate alternating ±1.0V Peak signals across load 
+  burden resistors inside the SCT-013-050 clamp.
+- The standard ESP32 ADC is single-ended, capable of processing voltages 
+  exclusively between 0.0V and 3.3V relative to Ground (GND).
+- Any positive AC voltage above 3.3V clips signals and causes distortion.
+- Any negative voltage swing (below 0V GND) sent directly to the pin clips
+  at the lower limit, resulting in severe math errors. It can also physically
+  degrade the micro-controller's sensitive silicon over time via forward-bias
+  conduction in the ESD clamp-down protection diodes.
+
+------------------------------------------------------------------------
+2. SYSTEM SCHEMATIC INTERACTION MAP (ASCII BLUEPRINT)
+------------------------------------------------------------------------
+
+   [ SCT-013 Current Clamp ] 
+        | (AC Swing ±1V Peak)
+        |
+        v  (TRS Jack Interface Connection)
+    (Tip)--------- [ 120 Ohm Burden Resistor ] ------+
+    (Sleeve)          | (Burden steps down current)   |
+        |             +-------------------------------+---> GPIO34 (ADC1_CH6)
+        |                                             |
+        |                                             +---- [ 100nF Cap ] ----+
+        |                                             |   (RF Bypass / High)  |
+        +------- (Stable DC Bias Node ~1.65V)         |   (Frequency Filter)  |
+                      |                               +-----------------------+---> GND
+             [ Resistor Divider ]                                             
+             |                                                                
+     3.3V ---+---[ 10k Ohm Metal Film ]---+                                   
+                                          |                                   
+                                          +-----------------------------------> GND
+                                          |                                   
+                                         --- [ 10uF Polarized Cap ]          
+                                         --- (Electrolytic reference shunt)   
+                                          |                                   
+                                         GND                                  
+
+------------------------------------------------------------------------
+3. THE PHYSICS & MATH IN BRIEF
+------------------------------------------------------------------------
+A. Voltage Divider Center Offset:
+   V_bias = V_cc * ( R2 / (R1 + R2) )
+   V_bias = 3.3V * ( 10,000 / (10,000 + 10,000) ) 
+   V_bias = 1.65 Volts
+
+B. Decoupling Shunt Capacitor (10uF):
+   Fills or sucks current variations at 50Hz/60Hz mains, maintaining 
+   an extremely stable 1.65V reference node even when the mains surge.
+
+C. Combined Wave Expression:
+   V_adc(t) = V_bias + V_clamp(t)
+   V_adc(t) = 1.65V + 1.0V * sin(omega * t)
+   V_max = 1.6 center + 1.0V Peak = 2.65 Volts (Fully Safe < 3.3V Limit)
+   V_min = 1.6 center - 1.0V Peak = 0.65 Volts (Fully Safe > 0.0V Ground)
+
+------------------------------------------------------------------------
+4. RECOMMENDED COMPONENT BILL-OF-MATERIALS (BOM)
+------------------------------------------------------------------------
+- 2x  10k Ohm Resistors (1% Metal Film tolerance for precise bias center)
+- 1x  120 Ohm Resistor (Burden, needed if using current-type SCT-013-000)
+- 1x  10 uF Electrolytic Capacitor (voltage rating >= 10V)
+- 1x  100 nF Ceramic Capacitor (bypass high-frequency grid noise harmonics)
+- 1x  ESP32 DevKitC Node or compatible board
+- 1x  SCT-013-050 Non-Invasive CT Sensor Clamp (Internal burden included)
